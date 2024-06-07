@@ -3,6 +3,7 @@ package com.example.mnemonic
 import DateUtil.getCurrentDateFormatted
 import DateUtil.getCurrentTimeFormatted
 import android.content.ContentValues.TAG
+import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -20,12 +21,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.mnemonic.ui.theme.MnemonicTheme
+import com.example.mnemonic.weather.WeatherRequest
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.StreetViewPanoramaLocation
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
     override fun onStart(){
@@ -41,34 +46,20 @@ class MainActivity : ComponentActivity() {
         viewModel = ViewModelProvider(this, viewModelFactory)[WeatherViewModel::class.java]
 
         /* 날씨 API 호출을 위한 현재 시간, 날짜 획득 */
-        val baseDate = getCurrentDateFormatted("yyyyMMdd").toIntOrNull()
-        val baseTime = timeChangeForWeatherApi(getCurrentTimeFormatted("HH00"))
+        val baseDate = getCurrentDateFormatted("yyyyMMdd")
 
         /* 날씨 API 호출을 위한 GPS 정보 요청 */
         getCurrentUserGpsData(this) { location ->
             if (location == null) {
                 Toast.makeText(this, "GPS 데이터를 불러오는데 실패했습니다", Toast.LENGTH_SHORT).show()
             } else{
+                val weatherRequest = convertToApiParams(location, baseDate, getCurrentTimeFormatted("HH00"))
                 /* 날씨 API 호출 */
-                if (baseDate != null && baseTime != null) {
-                    Log.d(TAG, "ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ $baseDate, $baseTime, $location  ")
-                    viewModel.getWeather(
-                        "JSON",
-                        14,
-                        1,
-                        baseDate,
-                        baseTime,
-                        location.longitude.toString(),
-                        location.latitude.toString()
-                    )
-                    viewModel.weatherResponse.observe(this) {
-                        for (i in it.body()?.response!!.body.items.item) {
-                            Log.d(TAG, "$i")
-                        }
+                viewModel.getWeather(weatherRequest)
+                viewModel.weatherResponse.observe(this) {
+                    for (i in it.body()?.response!!.body.items.item) {
+                        Log.d(TAG, "$i")
                     }
-                } else {
-                    Toast.makeText(this, "기상 정보를 불러오는데 실패했습니다", Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, "ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ $location")
                 }
             }
         }
@@ -76,8 +67,9 @@ class MainActivity : ComponentActivity() {
 }
 
 
-fun timeChangeForWeatherApi(time: String):Int?{
-    var convertedTime = "";
+fun convertToApiParams(location: Location, date: String, time: String ): WeatherRequest{
+    var convertedTime = "0500"
+    var convertedDate = date
     when (time) {
         "0200", "0300", "0400" -> convertedTime = "0200"
         "0500", "0600", "0700" -> convertedTime = "0500"
@@ -86,9 +78,15 @@ fun timeChangeForWeatherApi(time: String):Int?{
         "1400", "1500", "1600" -> convertedTime = "1400"
         "1700", "1800", "1900" -> convertedTime = "1700"
         "2000", "2100", "2200" -> convertedTime = "2000"
-        "2300", "0000", "0100" -> convertedTime = "2300"
+        "2300" -> convertedTime = "2300"
+        "0000", "0100" -> {
+            convertedTime = "2300"
+            val formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+            val originalDate = LocalDate.parse(date, formatter)
+            convertedDate = originalDate.minusDays(1).format(formatter)
+        }
     }
-    return convertedTime.toIntOrNull()
+    return WeatherRequest(baseTime = convertedTime, baseDate = convertedDate, nx = location.latitude.toInt().toString(), ny = location.longitude.toInt().toString())
 }
 
 /*

@@ -8,7 +8,7 @@ import retrofit2.http.Query
 class WeatherRepository(private val weatherApi: WeatherApiService){
     suspend fun getWeather(
         dataType : String, numOfRows : Int, pageNo : Int,
-        baseDate : Int, baseTime : Int, nx : String, ny : String) : Response<Weather> {
+        baseDate : String, baseTime : String, nx : String, ny : String) : Response<Weather> {
         return weatherApi.getWeather(dataType, numOfRows, pageNo, baseDate, baseTime, nx, ny)
     }
 }

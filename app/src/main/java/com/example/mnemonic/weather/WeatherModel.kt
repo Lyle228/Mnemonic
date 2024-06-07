@@ -1,5 +1,6 @@
 package com.example.mnemonic.weather
 
+
 data class Weather(
     val response: Response
 ){

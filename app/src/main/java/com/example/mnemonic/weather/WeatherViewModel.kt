@@ -11,9 +11,16 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
     private val _weatherResponse : MutableLiveData<Response<Weather>> = MutableLiveData()
     val weatherResponse get() = _weatherResponse
     fun getWeather(dataType : String, numOfRows : Int, pageNo : Int,
-                   baseDate : Int, baseTime : Int, nx : String, ny : String){
+                   baseDate : String, baseTime : String, nx : String, ny : String){
         viewModelScope.launch {
             val response = repository.getWeather(dataType, numOfRows, pageNo, baseDate, baseTime, nx, ny)
+            _weatherResponse.value = response
+        }
+    }
+    fun getWeather(weatherRequest: WeatherRequest){
+        viewModelScope.launch {
+            val response = repository.getWeather(weatherRequest.dataType, weatherRequest.numOfRows, weatherRequest.pageNo,
+                weatherRequest.baseDate, weatherRequest.baseTime, weatherRequest.nx, weatherRequest.ny)
             _weatherResponse.value = response
         }
     }
