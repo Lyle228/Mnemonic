@@ -1,6 +1,7 @@
-package com.example.mnemonic.weather
+package com.example.mnemonic.weather.api
 
 import com.example.mnemonic.apikey.ApiKey
+import com.example.mnemonic.weather.model.Weather
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Query

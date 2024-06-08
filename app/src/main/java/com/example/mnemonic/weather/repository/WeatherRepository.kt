@@ -1,9 +1,8 @@
-package com.example.mnemonic.weather
+package com.example.mnemonic.weather.repository
 
-import com.example.mnemonic.apikey.ApiKey.Companion.WEATHER_API_KEY
+import com.example.mnemonic.weather.api.WeatherApiService
+import com.example.mnemonic.weather.model.Weather
 import retrofit2.Response
-import retrofit2.http.GET
-import retrofit2.http.Query
 
 class WeatherRepository(private val weatherApi: WeatherApiService){
     suspend fun getWeather(

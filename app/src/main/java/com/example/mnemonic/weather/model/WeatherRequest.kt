@@ -1,11 +1,10 @@
-package com.example.mnemonic.weather
+package com.example.mnemonic.weather.model
 
-data class WeatherRequest(
+data class WeatherApiRequest(
     val dataType: String = "JSON",
-    val numOfRows: Int = 14,
+    val numOfRows: Int = 12,
     val pageNo: Int = 1,
     val baseDate: String,
-    val baseTime: String,
     val nx: String = "37",
     val ny: String = "127"
 )

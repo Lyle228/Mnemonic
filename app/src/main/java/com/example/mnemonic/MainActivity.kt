@@ -9,26 +9,32 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.lifecycle.ViewModelProvider
 import com.example.mnemonic.util.GpsUtil.getCurrentUserGpsData
-import com.example.mnemonic.weather.RetrofitInstance
-import com.example.mnemonic.weather.WeatherRepository
-import com.example.mnemonic.weather.WeatherViewModel
-import com.example.mnemonic.weather.WeatherViewModelFactory
+import com.example.mnemonic.weather.api.RetrofitInstance
+import com.example.mnemonic.weather.repository.WeatherRepository
+import com.example.mnemonic.weather.viewmodel.WeatherViewModel
+import com.example.mnemonic.weather.viewmodel.WeatherViewModelFactory
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.mnemonic.ui.theme.MnemonicTheme
-import com.example.mnemonic.weather.WeatherRequest
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.StreetViewPanoramaLocation
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import com.example.mnemonic.weather.model.WeatherApiRequest
+import com.example.mnemonic.weather.model.WeatherFormattedDataPerDay
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -55,19 +61,31 @@ class MainActivity : ComponentActivity() {
             } else{
                 val weatherRequest = convertToApiParams(location, baseDate, getCurrentTimeFormatted("HH00"))
                 /* 날씨 API 호출 */
-                viewModel.getWeather(weatherRequest)
-                viewModel.weatherResponse.observe(this) {
-                    for (i in it.body()?.response!!.body.items.item) {
-                        Log.d(TAG, "$i")
-                    }
-                }
+                viewModel.getWeatherCurrentThreeDay(weatherRequest)
+            }
+        }
+        setContent {
+            MnemonicTheme {
+                Test(modifier = Modifier, viewModel)
             }
         }
     }
 }
 
+fun convertToApiParams(location: Location, date: String, time: String ): WeatherApiRequest {
+    var convertedDate = date
+    when (time) {
+        "0000", "0100" -> {
+            val formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+            val originalDate = LocalDate.parse(date, formatter)
+            convertedDate = originalDate.minusDays(1).format(formatter)
+        }
+    }
+    return WeatherApiRequest(baseDate = convertedDate, nx = location.latitude.toInt().toString(), ny = location.longitude.toInt().toString())
+}
 
-fun convertToApiParams(location: Location, date: String, time: String ): WeatherRequest{
+/*
+fun convertToApiParams(location: Location, date: String, time: String ): WeatherRequestForThreeDay{
     var convertedTime = "0500"
     var convertedDate = date
     when (time) {
@@ -86,9 +104,9 @@ fun convertToApiParams(location: Location, date: String, time: String ): Weather
             convertedDate = originalDate.minusDays(1).format(formatter)
         }
     }
-    return WeatherRequest(baseTime = convertedTime, baseDate = convertedDate, nx = location.latitude.toInt().toString(), ny = location.longitude.toInt().toString())
+    return WeatherRequestForThreeDay(baseDate = convertedDate, nx = location.latitude.toInt().toString(), ny = location.longitude.toInt().toString())
 }
-
+*/
 /*
 @Composable
 fun WeatherArea(weatherViewModel : WeatherViewModel, modifier: Modifier = Modifier) {
@@ -123,25 +141,37 @@ fun GreetingPreview() {
 @Composable
 fun GreetingPreview() {
     MnemonicTheme {
-        Test()
+        val weatherFormattedDataPerDay: WeatherFormattedDataPerDay = WeatherFormattedDataPerDay(maximumTemperature = 30.0, minimumTemperature = 25.0)
+        //Test(modifier = Modifier, weatherFormattedDataPerDay)
     }
 }
 
 @Composable
-fun Test(modifier: Modifier = Modifier){
-    val seoul = LatLng(37.566535, 126.97796919)
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(seoul, 10f)
-    }
-
-    GoogleMap(
-        modifier = Modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState
+fun Test(modifier: Modifier = Modifier, viewModel: WeatherViewModel){
+    val weatherFormattedDataPerDayList by viewModel.weatherFormattedDataPerDayList.observeAsState()
+    val maxTemperature = weatherFormattedDataPerDayList?.getOrNull(0)?.maximumTemperature ?: 0.0
+    val minTemperature = weatherFormattedDataPerDayList?.getOrNull(0)?.minimumTemperature ?: 0.0
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Marker(
-            state = MarkerState(position = seoul),
-            title = "Seoul",
-            snippet = "Marker in Seoul"
+        Text(
+            text = "서울",
+            fontSize = 17.sp
+        )
+        Text(
+            text = "19°C",
+            fontSize = 30.sp
+        )
+        Text(
+            text = "흐림",
+            fontSize = 10.sp
+        )
+        Text(
+            text = "최고:${maxTemperature}°C 최저: ${minTemperature}°C",
+            fontSize = 10.sp
         )
     }
 }

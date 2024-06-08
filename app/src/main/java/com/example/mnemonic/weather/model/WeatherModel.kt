@@ -1,4 +1,4 @@
-package com.example.mnemonic.weather
+package com.example.mnemonic.weather.model
 
 
 data class Weather(
@@ -24,11 +24,11 @@ data class Weather(
     )
 
     data class Item(
-        val baseData: Int,
-        val baseTime: Int,
+        val baseDate: String,
+        val baseTime: String,
         val category: String,
-        val fcstDate: Int,
-        val fcstTime: Int,
+        val fcstDate: String,
+        val fcstTime: String,
         val fcstValue: String,
         val nx : Int,
         val ny : Int

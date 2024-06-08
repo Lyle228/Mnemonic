@@ -1,7 +1,8 @@
-package com.example.mnemonic.weather
+package com.example.mnemonic.weather.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.mnemonic.weather.repository.WeatherRepository
 
 class WeatherViewModelFactory(private val repository: WeatherRepository) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")

@@ -1,4 +1,4 @@
-package com.example.mnemonic.weather
+package com.example.mnemonic.weather.api
 
 import com.example.mnemonic.MainConstants
 import retrofit2.Retrofit
