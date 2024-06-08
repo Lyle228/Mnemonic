@@ -33,10 +33,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mnemonic.ui.theme.MnemonicTheme
+import com.example.mnemonic.weather.model.PrecipitationType
 import com.example.mnemonic.weather.model.WeatherApiRequest
 import com.example.mnemonic.weather.model.WeatherFormattedDataPerDay
+import com.example.mnemonic.weather.model.WeatherType
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onStart(){
@@ -141,7 +145,7 @@ fun GreetingPreview() {
 @Composable
 fun GreetingPreview() {
     MnemonicTheme {
-        val weatherFormattedDataPerDay: WeatherFormattedDataPerDay = WeatherFormattedDataPerDay(maximumTemperature = 30.0, minimumTemperature = 25.0)
+        val weatherFormattedDataPerDay: WeatherFormattedDataPerDay = WeatherFormattedDataPerDay(maximumTemperature = 30, minimumTemperature = 25)
         //Test(modifier = Modifier, weatherFormattedDataPerDay)
     }
 }
@@ -149,8 +153,34 @@ fun GreetingPreview() {
 @Composable
 fun Test(modifier: Modifier = Modifier, viewModel: WeatherViewModel){
     val weatherFormattedDataPerDayList by viewModel.weatherFormattedDataPerDayList.observeAsState()
-    val maxTemperature = weatherFormattedDataPerDayList?.getOrNull(0)?.maximumTemperature ?: 0.0
-    val minTemperature = weatherFormattedDataPerDayList?.getOrNull(0)?.minimumTemperature ?: 0.0
+    val weatherFormattedDataPerDayToday = weatherFormattedDataPerDayList?.getOrNull(0)
+    val dateFormatter = DateTimeFormatter.ofPattern("HH", Locale.US)
+    val nowHour: Int? = LocalDateTime.now().format(dateFormatter).toIntOrNull()
+
+    /* 최고, 최저 기온 */
+    val maxTemperature = weatherFormattedDataPerDayToday?.maximumTemperature ?: 0.0
+    val minTemperature = weatherFormattedDataPerDayToday?.minimumTemperature ?: 0.0
+
+    /* 현재 날씨 */
+    val precipitationType =
+        weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourList?.getOrNull(
+            nowHour?.minus(1) ?: 0
+        )?.precipitationType
+    var weatherNowText = "맑음"
+    when (precipitationType) {
+        PrecipitationType.None     -> weatherNowText = "맑음"
+        PrecipitationType.Rain     -> weatherNowText = "비"
+        PrecipitationType.SnowRain -> weatherNowText =  "눈비"
+        PrecipitationType.Snow     -> weatherNowText =  "눈"
+        PrecipitationType.Shower   -> weatherNowText =  "소나기"
+        else -> "오류"
+    }
+
+    /* 현재 기온 */
+    val temperatureNowText = weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourList?.getOrNull(
+    nowHour?.minus(1) ?: 0
+    )?.temperature.toString()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -162,11 +192,11 @@ fun Test(modifier: Modifier = Modifier, viewModel: WeatherViewModel){
             fontSize = 17.sp
         )
         Text(
-            text = "19°C",
+            text = temperatureNowText,
             fontSize = 30.sp
         )
         Text(
-            text = "흐림",
+            text = weatherNowText,
             fontSize = 10.sp
         )
         Text(

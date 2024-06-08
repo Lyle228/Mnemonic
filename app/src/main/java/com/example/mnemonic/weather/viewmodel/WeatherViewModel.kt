@@ -1,5 +1,6 @@
 package com.example.mnemonic.weather.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -19,85 +20,71 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
     val weatherFormattedDataPerDayList: LiveData<MutableList<WeatherFormattedDataPerDay>>
         get() = _weatherFormattedDataPerDayList
     fun getWeatherCurrentThreeDay(dataType : String, baseDate : String, nx : String, ny : String){
-        val numOfRows = 12 // 기상청 API는 1시간에 12개의 값을 리턴해준다.
-        val weatherFormattedDataPerDayList:MutableList<WeatherFormattedDataPerDay> = mutableListOf()
-
+        val numOfRows = 12 * 24 * 3// 기상청 API는 1시간에 12개의 값을 리턴해준다.
         viewModelScope.launch {
-            val weatherFormattedDataPerDay = WeatherFormattedDataPerDay()
-            for(day in 1 .. 3) {
-                for (hour in 0..23) {
-                    val pageNo = (day - 1) * 24 + hour / 3 + 1
-                    val response =
-                        repository.getWeather(
-                            dataType,
-                            numOfRows,
-                            pageNo,
-                            baseDate,
-                            "0200",
-                            nx,
-                            ny
-                        )
-                    val weatherFormattedDataPerHour = formatResponse(response)
-                    weatherFormattedDataPerDay.weatherFormattedDataPerHourList.add(weatherFormattedDataPerHour)
-
-                    val newTemperature = weatherFormattedDataPerHour.temperature
-                    if(newTemperature != null){
-                        if(weatherFormattedDataPerDay.maximumTemperature < newTemperature){
-                            weatherFormattedDataPerDay.maximumTemperature = newTemperature
-                        }
-                        if(weatherFormattedDataPerDay.minimumTemperature > newTemperature){
-                            weatherFormattedDataPerDay.minimumTemperature = newTemperature
-                        }
-                    }
-                }
-                weatherFormattedDataPerDayList.add(weatherFormattedDataPerDay)
-            }
-            _weatherFormattedDataPerDayList.value = weatherFormattedDataPerDayList
+            val pageNo = 1
+            val response =
+                repository.getWeather(
+                    dataType,
+                    numOfRows,
+                    pageNo,
+                    baseDate,
+                    "0200",
+                    nx,
+                    ny
+                )
+            _weatherFormattedDataPerDayList.value = formatResponse(response)
         }
     }
     fun getWeatherCurrentThreeDay(weatherRequest: WeatherApiRequest){
-        val numOfRows = 12 // 기상청 API는 1시간에 12개의 값을 리턴해준다.
-        val weatherFormattedDataPerDayList:MutableList<WeatherFormattedDataPerDay> = mutableListOf()
-
+        val numOfRows = 12 * 24 * 3// 기상청 API는 1시간에 12개의 값을 리턴해준다.
         viewModelScope.launch {
-            val weatherFormattedDataPerDay = WeatherFormattedDataPerDay()
-            for(day in 1 .. 3) {
-                for (hour in 0..23) {
-                    val pageNo = (day - 1) * 24 + hour / 3 + 1
-                    val response =
-                        repository.getWeather(
-                            weatherRequest.dataType,
-                            numOfRows,
-                            pageNo,
-                            weatherRequest.baseDate,
-                            "0200",
-                            weatherRequest.nx,
-                            weatherRequest.ny
-                        )
-                    val weatherFormattedDataPerHour = formatResponse(response)
-                    weatherFormattedDataPerDay.weatherFormattedDataPerHourList.add(weatherFormattedDataPerHour)
-
-                    val newTemperature = weatherFormattedDataPerHour.temperature
-                    if(newTemperature != null){
-                        if(weatherFormattedDataPerDay.maximumTemperature < newTemperature){
-                            weatherFormattedDataPerDay.maximumTemperature = newTemperature
-                        }
-                        if(weatherFormattedDataPerDay.minimumTemperature > newTemperature){
-                            weatherFormattedDataPerDay.minimumTemperature = newTemperature
-                        }
-                    }
-                }
-                weatherFormattedDataPerDayList.add(weatherFormattedDataPerDay)
-            }
-            _weatherFormattedDataPerDayList.value = weatherFormattedDataPerDayList
+            Log.d("test", "${weatherRequest.nx} ${weatherRequest.ny}")
+            val pageNo = 1
+            val response =
+                repository.getWeather(
+                    weatherRequest.dataType,
+                    numOfRows,
+                    pageNo,
+                    weatherRequest.baseDate,
+                    "0200",
+                    "57",
+                    "127"
+                )
+            _weatherFormattedDataPerDayList.value = formatResponse(response)
         }
     }
 
-    private fun formatResponse(response: Response<Weather>): WeatherFormattedDataPerHour {
+    private fun formatResponse(response: Response<Weather>): MutableList<WeatherFormattedDataPerDay> {
         val items = response.body()?.response?.body?.items?.item ?: emptyList()
-
-        val weatherFormattedDataPerHour = WeatherFormattedDataPerHour()
+        val weatherFormattedDataPerDayList = mutableListOf<WeatherFormattedDataPerDay>()
+        var weatherFormattedDataPerDay = WeatherFormattedDataPerDay()
+        var weatherFormattedDataPerHour = WeatherFormattedDataPerHour()
+        var preHour = "start"
+        var preDate = "start"
         for (item in items){
+            if(preHour == "start" && preDate == "start"){
+                preHour = item.fcstTime
+                preDate = item.fcstDate
+            }
+            if(item.fcstTime != preHour ){
+                if(preDate != item.fcstDate) {
+                    weatherFormattedDataPerDay.weatherFormattedDataPerHourList.add(
+                        weatherFormattedDataPerHour
+                    )
+                    weatherFormattedDataPerDayList.add(weatherFormattedDataPerDay)
+                    weatherFormattedDataPerHour = WeatherFormattedDataPerHour()
+                    weatherFormattedDataPerDay = WeatherFormattedDataPerDay()
+                    preHour = item.fcstTime
+                    preDate = item.fcstDate
+                } else {
+                    weatherFormattedDataPerDay.weatherFormattedDataPerHourList.add(
+                        weatherFormattedDataPerHour
+                    )
+                    weatherFormattedDataPerHour = WeatherFormattedDataPerHour()
+                    preHour = item.fcstTime
+                }
+            }
             weatherFormattedDataPerHour.category = item.category
             weatherFormattedDataPerHour.baseDate = item.baseDate
             weatherFormattedDataPerHour.baseTime = item.baseTime
@@ -128,7 +115,19 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
                         4 -> weatherFormattedDataPerHour.weatherType = WeatherType.cloudyWeather
                     }
                 }
-                "TMP" -> weatherFormattedDataPerHour.temperature = item.fcstValue.toDoubleOrNull()
+                "TMP" -> {
+                    val value = item.fcstValue.toIntOrNull()
+                    Log.d("test", "$value ${item.fcstDate} ${item.fcstTime}")
+                    if(value != null) {
+                        weatherFormattedDataPerHour.temperature = value
+                        if (value < weatherFormattedDataPerDay.minimumTemperature) {
+                            weatherFormattedDataPerDay.minimumTemperature = value
+                        }
+                        if (value > weatherFormattedDataPerDay.maximumTemperature) {
+                            weatherFormattedDataPerDay.maximumTemperature = value
+                        }
+                    }
+                }
                 "TMN" -> weatherFormattedDataPerHour.temperatureLow = item.fcstValue.toDoubleOrNull()
                 "TMX" -> weatherFormattedDataPerHour.temperatureHigh = item.fcstValue.toDoubleOrNull()
                 "UUU" -> weatherFormattedDataPerHour.eastWestWindSpeed = item.fcstValue.toDoubleOrNull()
@@ -138,6 +137,6 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
                 "WSD" -> weatherFormattedDataPerHour.windSpeed = item.fcstValue.toDoubleOrNull()
             }
         }
-        return weatherFormattedDataPerHour
+        return weatherFormattedDataPerDayList
     }
 }

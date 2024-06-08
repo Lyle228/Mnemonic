@@ -7,7 +7,7 @@ data class WeatherFormattedDataPerHour(
     var humidity: Double? = 0.0,
     var snowfallAmount: Int? = 0,
     var weatherType: WeatherType? = WeatherType.Sunny,
-    var temperature: Double? = 0.0,
+    var temperature: Int? = 0,
     var temperatureLow: Double? = 0.0,  // no use
     var temperatureHigh: Double? = 0.0, // no use
     var eastWestWindSpeed: Double? = 0.0,
