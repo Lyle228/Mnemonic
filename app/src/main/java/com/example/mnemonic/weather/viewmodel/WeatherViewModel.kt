@@ -12,7 +12,9 @@ import com.example.mnemonic.weather.model.WeatherApiRequest
 import com.example.mnemonic.weather.model.WeatherFormattedDataPerDay
 import com.example.mnemonic.weather.model.WeatherFormattedDataPerHour
 import com.example.mnemonic.weather.model.WeatherType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Response
 
 class WeatherViewModel (private val repository: WeatherRepository) : ViewModel() {
@@ -20,10 +22,10 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
     val weatherFormattedDataPerDayList: LiveData<MutableList<WeatherFormattedDataPerDay>>
         get() = _weatherFormattedDataPerDayList
     fun getWeatherCurrentThreeDay(dataType : String, baseDate : String, nx : String, ny : String){
-        val numOfRows = 12 * 24 * 3// 기상청 API는 1시간에 12개의 값을 리턴해준다.
         viewModelScope.launch {
+            val numOfRows = 12 * 24 * 3// 기상청 API는 1시간에 12개의 값을 리턴해준다.
             val pageNo = 1
-            val response =
+            val response = withContext(Dispatchers.IO) {
                 repository.getWeather(
                     dataType,
                     numOfRows,
@@ -33,25 +35,32 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
                     nx,
                     ny
                 )
-            _weatherFormattedDataPerDayList.value = formatResponse(response)
+            }
+            val formattedData = withContext(Dispatchers.Default) {
+                _weatherFormattedDataPerDayList.value
+            }
+            _weatherFormattedDataPerDayList.value = formattedData
         }
     }
     fun getWeatherCurrentThreeDay(weatherRequest: WeatherApiRequest){
-        val numOfRows = 12 * 24 * 3// 기상청 API는 1시간에 12개의 값을 리턴해준다.
         viewModelScope.launch {
-            Log.d("test", "${weatherRequest.nx} ${weatherRequest.ny}")
-            val pageNo = 1
-            val response =
+            val numOfRows = 12 * 24 * 3// 기상청 API는 1시간에 12개의 값을 리턴해준다.
+            val response = withContext(Dispatchers.IO) {
+                val pageNo = 1
                 repository.getWeather(
                     weatherRequest.dataType,
                     numOfRows,
                     pageNo,
                     weatherRequest.baseDate,
                     "0200",
-                    "57",
-                    "127"
+                    weatherRequest.nx,
+                    weatherRequest.ny
                 )
-            _weatherFormattedDataPerDayList.value = formatResponse(response)
+            }
+            val formattedData = withContext(Dispatchers.Default) {
+                formatResponse(response)
+            }
+            _weatherFormattedDataPerDayList.value = formattedData
         }
     }
 
@@ -60,29 +69,36 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
         val weatherFormattedDataPerDayList = mutableListOf<WeatherFormattedDataPerDay>()
         var weatherFormattedDataPerDay = WeatherFormattedDataPerDay()
         var weatherFormattedDataPerHour = WeatherFormattedDataPerHour()
-        var preHour = "start"
         var preDate = "start"
+        var preTime = "start"
         for (item in items){
-            if(preHour == "start" && preDate == "start"){
-                preHour = item.fcstTime
+            if(preTime == "start"){
+                preTime = item.fcstTime
+            }
+            if(preDate == "start"){
                 preDate = item.fcstDate
             }
-            if(item.fcstTime != preHour ){
-                if(preDate != item.fcstDate) {
-                    weatherFormattedDataPerDay.weatherFormattedDataPerHourList.add(
-                        weatherFormattedDataPerHour
-                    )
+            /*
+            Json의 정보를 기본적으로 1시간 단위로 나눠 저장한다.
+            1시간 동안의 정보를 WeatherFormattedDataPerHour이라고 저장하며 예측 시간이 바꼈으면,
+            해당 WeatherFormattedDataPerHour는 weatherFormattedDataPerDay의 WeatherFormattedDataPerHourMap에 (key : 예측시간) 추가하고
+            WeatherFormattedDataPerHour는 초기화해 새로운 시간 정보를 저장할 수 있도록 한다.
+
+            날짜가 변경됐을 때는 해당 weatherFormattedDataPerDay를 weatherFormattedDataPerDayList에 추가하고
+            새로운 날짜의 정보를 담을 수 있도록 weatherFormattedDataPerDay를 초기화해준다.
+            */
+            if(preTime != item.fcstTime) {
+                if (preDate != item.fcstDate) {
+                    weatherFormattedDataPerDay.weatherFormattedDataPerHourMap[preTime] = weatherFormattedDataPerHour
                     weatherFormattedDataPerDayList.add(weatherFormattedDataPerDay)
                     weatherFormattedDataPerHour = WeatherFormattedDataPerHour()
                     weatherFormattedDataPerDay = WeatherFormattedDataPerDay()
-                    preHour = item.fcstTime
+                    preTime = item.fcstTime
                     preDate = item.fcstDate
-                } else {
-                    weatherFormattedDataPerDay.weatherFormattedDataPerHourList.add(
-                        weatherFormattedDataPerHour
-                    )
+                } else{
+                    weatherFormattedDataPerDay.weatherFormattedDataPerHourMap[preTime] = weatherFormattedDataPerHour
                     weatherFormattedDataPerHour = WeatherFormattedDataPerHour()
-                    preHour = item.fcstTime
+                    preTime = item.fcstTime
                 }
             }
             weatherFormattedDataPerHour.category = item.category

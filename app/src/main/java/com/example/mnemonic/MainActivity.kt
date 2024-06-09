@@ -36,7 +36,9 @@ import com.example.mnemonic.ui.theme.MnemonicTheme
 import com.example.mnemonic.weather.model.PrecipitationType
 import com.example.mnemonic.weather.model.WeatherApiRequest
 import com.example.mnemonic.weather.model.WeatherFormattedDataPerDay
+import com.example.mnemonic.weather.model.WeatherFormattedDataPerHour
 import com.example.mnemonic.weather.model.WeatherType
+import com.example.mnemonic.weather.util.WeatherCoordinateConverter
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -85,7 +87,9 @@ fun convertToApiParams(location: Location, date: String, time: String ): Weather
             convertedDate = originalDate.minusDays(1).format(formatter)
         }
     }
-    return WeatherApiRequest(baseDate = convertedDate, nx = location.latitude.toInt().toString(), ny = location.longitude.toInt().toString())
+    val converter = WeatherCoordinateConverter()
+    val convertedLocation = converter.convertToXy(location.latitude, location.longitude)
+    return WeatherApiRequest(baseDate = convertedDate, nx = convertedLocation.nx.toString(), ny = convertedLocation.ny.toString())
 }
 
 /*
@@ -111,35 +115,6 @@ fun convertToApiParams(location: Location, date: String, time: String ): Weather
     return WeatherRequestForThreeDay(baseDate = convertedDate, nx = location.latitude.toInt().toString(), ny = location.longitude.toInt().toString())
 }
 */
-/*
-@Composable
-fun WeatherArea(weatherViewModel : WeatherViewModel, modifier: Modifier = Modifier) {
-    var testValue = weatherViewModel.weatherResponse
-    Surface(
-        color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(vertical = 4.dp, horizontal = 8.dp)
-    ) {
-        Row(modifier = Modifier.padding(24.dp)) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = "zz")
-            }
-            ElevatedButton(
-                onClick = { weatherViewModel.getWeather("JSON", 14, 1, 20240602, 1100, "63", "89") }
-            ) {
-                Text("Show more")
-            }
-        }
-    }
-}
-*/
-/*
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MnemonicTheme {
-        //WeatherArea()
-    }
-}*/
 
 @Preview(showBackground = true)
 @Composable
@@ -154,18 +129,15 @@ fun GreetingPreview() {
 fun Test(modifier: Modifier = Modifier, viewModel: WeatherViewModel){
     val weatherFormattedDataPerDayList by viewModel.weatherFormattedDataPerDayList.observeAsState()
     val weatherFormattedDataPerDayToday = weatherFormattedDataPerDayList?.getOrNull(0)
-    val dateFormatter = DateTimeFormatter.ofPattern("HH", Locale.US)
+    val dateFormatter = DateTimeFormatter.ofPattern("HH00", Locale.US)
     val nowHour: Int? = LocalDateTime.now().format(dateFormatter).toIntOrNull()
-
     /* 최고, 최저 기온 */
     val maxTemperature = weatherFormattedDataPerDayToday?.maximumTemperature ?: 0.0
     val minTemperature = weatherFormattedDataPerDayToday?.minimumTemperature ?: 0.0
 
     /* 현재 날씨 */
     val precipitationType =
-        weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourList?.getOrNull(
-            nowHour?.minus(1) ?: 0
-        )?.precipitationType
+        weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.getValue(nowHour.toString())?.precipitationType
     var weatherNowText = "맑음"
     when (precipitationType) {
         PrecipitationType.None     -> weatherNowText = "맑음"
@@ -177,9 +149,7 @@ fun Test(modifier: Modifier = Modifier, viewModel: WeatherViewModel){
     }
 
     /* 현재 기온 */
-    val temperatureNowText = weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourList?.getOrNull(
-    nowHour?.minus(1) ?: 0
-    )?.temperature.toString()
+    val temperatureNowText = weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.getValue(nowHour.toString())?.temperature.toString()
 
     Column(
         modifier = Modifier
