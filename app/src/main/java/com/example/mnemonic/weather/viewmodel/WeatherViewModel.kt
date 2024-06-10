@@ -1,6 +1,13 @@
 package com.example.mnemonic.weather.viewmodel
 
+import android.content.Context
+import android.location.Address
+import android.location.Geocoder
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -21,6 +28,14 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
     private val _weatherFormattedDataPerDayList: MutableLiveData<MutableList<WeatherFormattedDataPerDay>> = MutableLiveData()
     val weatherFormattedDataPerDayList: LiveData<MutableList<WeatherFormattedDataPerDay>>
         get() = _weatherFormattedDataPerDayList
+
+    private val _locationName: MutableLiveData<String> = MutableLiveData()
+    val locationName: LiveData<String>
+        get() = _locationName
+
+    private val _locationNameDetail: MutableLiveData<String> = MutableLiveData()
+    val locationNameDetail: LiveData<String>
+        get() = _locationNameDetail
     fun getWeatherCurrentThreeDay(dataType : String, baseDate : String, nx : String, ny : String){
         viewModelScope.launch {
             val numOfRows = 12 * 24 * 3// 기상청 API는 1시간에 12개의 값을 리턴해준다.
@@ -63,7 +78,26 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
             _weatherFormattedDataPerDayList.value = formattedData
         }
     }
-
+    fun getLocationName(context: Context, latitude : Double, longitude : Double) {
+        val g = Geocoder(context)
+        Log.d("test", "---------------------- getLocationName: 호출")
+        if (Build.VERSION.SDK_INT > 33) {
+            val geocodeListener = Geocoder.GeocodeListener { addresses ->
+                if (addresses.isNotEmpty()) {
+                    val address: Address = addresses[0]
+                    _locationName.postValue(address.adminArea)
+                    _locationNameDetail.postValue(address.thoroughfare)
+                }
+            }
+            g.getFromLocation(latitude, longitude, 1, geocodeListener)
+        } else{
+            val address = g.getFromLocation(latitude, longitude, 1)
+            if (!address.isNullOrEmpty()) {
+                _locationName.postValue(address[0].adminArea.toString())
+                _locationNameDetail.postValue(address[0].thoroughfare)
+            }
+        }
+    }
     private fun formatResponse(response: Response<Weather>): MutableList<WeatherFormattedDataPerDay> {
         val items = response.body()?.response?.body?.items?.item ?: emptyList()
         val weatherFormattedDataPerDayList = mutableListOf<WeatherFormattedDataPerDay>()
