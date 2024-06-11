@@ -23,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Response
+import java.net.SocketTimeoutException
 
 class WeatherViewModel (private val repository: WeatherRepository) : ViewModel() {
     private val _weatherFormattedDataPerDayList: MutableLiveData<MutableList<WeatherFormattedDataPerDay>> = MutableLiveData()
@@ -60,22 +61,28 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
     fun getWeatherCurrentThreeDay(weatherRequest: WeatherApiRequest){
         viewModelScope.launch {
             val numOfRows = 12 * 24 * 3// 기상청 API는 1시간에 12개의 값을 리턴해준다.
-            val response = withContext(Dispatchers.IO) {
-                val pageNo = 1
-                repository.getWeather(
-                    weatherRequest.dataType,
-                    numOfRows,
-                    pageNo,
-                    weatherRequest.baseDate,
-                    "0200",
-                    weatherRequest.nx,
-                    weatherRequest.ny
-                )
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    val pageNo = 1
+                    repository.getWeather(
+                        weatherRequest.dataType,
+                        numOfRows,
+                        pageNo,
+                        weatherRequest.baseDate,
+                        "1700",
+                        weatherRequest.nx,
+                        weatherRequest.ny
+                    )
+                }
+                val formattedData = withContext(Dispatchers.Default) {
+                    formatResponse(response)
+                }
+                _weatherFormattedDataPerDayList.value = formattedData
+            } catch (e: Exception) {
+                if (e is SocketTimeoutException) {
+                    Log.e("weather api request", "요청 응답시간 초과")
+                }
             }
-            val formattedData = withContext(Dispatchers.Default) {
-                formatResponse(response)
-            }
-            _weatherFormattedDataPerDayList.value = formattedData
         }
     }
     fun getLocationName(context: Context, latitude : Double, longitude : Double) {
