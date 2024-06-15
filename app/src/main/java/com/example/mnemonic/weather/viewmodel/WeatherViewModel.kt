@@ -160,9 +160,9 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
                         else -> weatherFormattedDataPerHour.precipitationType = null
                     }
                 }
-                "PCP" -> weatherFormattedDataPerHour.precipitationAmount = item.fcstValue.toDoubleOrNull()
-                "REH" -> weatherFormattedDataPerHour.humidity = item.fcstValue.toDoubleOrNull()
-                "SNO" -> weatherFormattedDataPerHour.snowfallAmount = item.fcstValue.toIntOrNull()
+                "PCP" -> weatherFormattedDataPerHour.precipitationAmount = item.fcstValue.toDoubleOrNull() ?: 0.0
+                "REH" -> weatherFormattedDataPerHour.humidity = item.fcstValue.toDoubleOrNull() ?: 0.0
+                "SNO" -> weatherFormattedDataPerHour.snowfallAmount = item.fcstValue.toIntOrNull() ?: 0
                 "SKY" -> {
                     val value = item.fcstValue.toIntOrNull()
                     when(value) {
