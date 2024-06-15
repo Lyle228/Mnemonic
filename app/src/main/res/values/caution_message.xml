@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="heatwave_msg">
+        오늘의 최고 온도는 %1$s도로 매우 더운 날씨가 예상되요.\n
+        무리한 야외 활동을 자제하시고, 수분을 충분히 섭취해 주세요
+    </string>
+    <string name="rain_msg">
+        오늘은 비가 예보 되어있으니 외출 시 우산을 챙기세요.
+    </string>
+</resources>

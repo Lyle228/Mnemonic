@@ -69,7 +69,7 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
                         numOfRows,
                         pageNo,
                         weatherRequest.baseDate,
-                        "1700",
+                        "0200",
                         weatherRequest.nx,
                         weatherRequest.ny
                     )
@@ -87,7 +87,6 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
     }
     fun getLocationName(context: Context, latitude : Double, longitude : Double) {
         val g = Geocoder(context)
-        Log.d("test", "---------------------- getLocationName: 호출")
         if (Build.VERSION.SDK_INT > 33) {
             val geocodeListener = Geocoder.GeocodeListener { addresses ->
                 if (addresses.isNotEmpty()) {
@@ -174,7 +173,6 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
                 }
                 "TMP" -> {
                     val value = item.fcstValue.toIntOrNull()
-                    Log.d("test", "$value ${item.fcstDate} ${item.fcstTime}")
                     if(value != null) {
                         weatherFormattedDataPerHour.temperature = value
                         if (value < weatherFormattedDataPerDay.minimumTemperature) {

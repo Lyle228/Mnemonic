@@ -3,6 +3,7 @@ package com.example.mnemonic
 import DateUtil.getCurrentDateFormatted
 import DateUtil.getCurrentTimeFormatted
 import android.content.ContentValues.TAG
+import android.content.Context
 import android.location.Location
 import android.media.Image
 import android.os.Bundle
@@ -11,6 +12,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +31,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,11 +41,16 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.mnemonic.chatgpt.api.ChatGPTRetrofitInstance
+import com.example.mnemonic.chatgpt.repository.ChatGPTRepository
+import com.example.mnemonic.chatgpt.viewmodel.ChatGPTViewModel
+import com.example.mnemonic.chatgpt.viewmodel.ChatGPTViewModelFactory
 import com.example.mnemonic.ui.theme.MnemonicTheme
 import com.example.mnemonic.weather.model.PrecipitationType
 import com.example.mnemonic.weather.model.WeatherApiRequest
@@ -59,6 +69,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private lateinit var viewModel: WeatherViewModel
+    private lateinit var chatGPTViewModel: ChatGPTViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val weatherApiService = RetrofitInstance.api;
@@ -83,14 +94,26 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        /* 챗GPT 호출 */
+
+        val chatGPTApiService = ChatGPTRetrofitInstance.api
+        val chatGPTRepository = ChatGPTRepository(chatGPTApiService)
+        val chatGPTViewModelFactory = ChatGPTViewModelFactory(chatGPTRepository)
+        chatGPTViewModel = ViewModelProvider(this, chatGPTViewModelFactory)[ChatGPTViewModel::class.java]
+        chatGPTViewModel.getChatGPTResponse("안녕")
+
         setContent {
             MnemonicTheme {
                 Column {
                     TodayWeatherInfomation(modifier = Modifier, viewModel)
-                    Row(Modifier.fillMaxWidth().height(60.dp)) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(60.dp)) {
                         ForecastWeatherInformation(viewModel = viewModel, dayLater = 1, modifier = Modifier.weight(1f))
                         ForecastWeatherInformation(viewModel = viewModel, dayLater = 2, modifier = Modifier.weight(1f))
                     }
+                    CautionMessage(viewModel = chatGPTViewModel)
                 }
             }
         }
@@ -150,7 +173,7 @@ fun TodayWeatherInfomation(modifier: Modifier = Modifier, viewModel: WeatherView
     val weatherFormattedDataPerDayList by viewModel.weatherFormattedDataPerDayList.observeAsState()
     val weatherFormattedDataPerDayToday = weatherFormattedDataPerDayList?.getOrNull(0)
     val dateFormatter = DateTimeFormatter.ofPattern("HH00", Locale.US)
-    val nowHour: Int? = LocalDateTime.now().format(dateFormatter).toIntOrNull()
+    val nowHour: String = LocalDateTime.now().format(dateFormatter).toString()
 
     /* 주소 정보 */
     val locationName by viewModel.locationName.observeAsState("unknown")
@@ -162,9 +185,9 @@ fun TodayWeatherInfomation(modifier: Modifier = Modifier, viewModel: WeatherView
 
     /* 날씨 정보 */
     val precipitationType =
-        weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.getValue(nowHour.toString())?.precipitationType
+        weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.getOrDefault(nowHour, null)?.precipitationType
     val weatherType =
-        weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.getValue(nowHour.toString())?.weatherType
+        weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.getOrDefault(nowHour, null)?.weatherType
     var weatherNowText = ""
     var weatherIconId = R.drawable.icon_weather_sunny
     when (precipitationType) {
@@ -260,13 +283,12 @@ fun ForecastWeatherInformationPreview() {
         }
     }
 }
-
 @Composable
 fun ForecastWeatherInformation(modifier: Modifier = Modifier, viewModel: WeatherViewModel, dayLater: Int) {
     val weatherFormattedDataPerDayList by viewModel.weatherFormattedDataPerDayList.observeAsState()
     val weatherFormattedDataPerDayToday = weatherFormattedDataPerDayList?.getOrNull(dayLater)
     val dateFormatter = DateTimeFormatter.ofPattern("MM/dd", Locale.US)
-    val nowDate: String = LocalDate.now().format(dateFormatter).toString()
+    val nowDate: String = LocalDate.now().plusDays(dayLater.toLong()).format(dateFormatter)
     /* 최고, 최저 기온 */
     val maxTemperature = weatherFormattedDataPerDayToday?.maximumTemperature ?: 0.0
     val minTemperature = weatherFormattedDataPerDayToday?.minimumTemperature ?: 0.0
@@ -369,6 +391,41 @@ fun ForecastWeatherInformation(modifier: Modifier = Modifier, viewModel: Weather
             text = "${maxTemperature}°C / ${minTemperature}°C",
             fontSize = 14.sp,
         )
+        }
+    }
+}
+@Preview
+@Composable
+fun CautionMessagePreview() {
+    MnemonicTheme {
+        val context = LocalContext.current
+        //autionMessage(messageID = R.string.heatwave_msg, context = context, params = listOf("20") )
+    }
+}
+@Composable
+fun CautionMessage(modifier: Modifier = Modifier, viewModel: ChatGPTViewModel) {
+    val cautionMessageText = viewModel.adviceMessage.observeAsState().value ?: "invalid"
+    Box(modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 30.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(10.dp)
+                )
+        ) {
+            Spacer(modifier = Modifier.height(5.dp))
+            Text(
+                modifier = modifier
+                    .align(Alignment.CenterHorizontally),
+                text = cautionMessageText,
+                fontSize = 10.sp,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(5.dp))
         }
     }
 }
