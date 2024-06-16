@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import com.example.mnemonic.chatgpt.viewmodel.ChatGPTViewModel
 import com.example.mnemonic.ui.theme.MnemonicTheme
 import com.example.mnemonic.weather.api.RetrofitInstance
@@ -115,6 +116,11 @@ fun TodayWeatherInformation(modifier: Modifier = Modifier, viewModel: WeatherVie
         else -> weatherNowText = "오류"
     }
 
+    /* 기타 정보 */
+    val precipitationProbability = weatherFormattedDataPerHourMap?.get(nowHour)?.precipitationProbability ?: 0.0
+    val windSpeed = weatherFormattedDataPerHourMap?.get(nowHour)?.windSpeed ?: 0.0
+    val humidity = weatherFormattedDataPerHourMap?.get(nowHour)?.humidity ?: 0.0
+
     /* 현재 기온 */
     val temperature = weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.get(nowHour)?.temperature
     val temperatureNowText = temperature?.toString() ?: "N/A"
@@ -134,26 +140,42 @@ fun TodayWeatherInformation(modifier: Modifier = Modifier, viewModel: WeatherVie
         ) {
             Image(
                 modifier = Modifier
-                    .width(24.dp)
-                    .height(25.dp),
+                    .width(35.dp)
+                    .height(45.dp),
                 painter = painterResource(id = weatherIconId),
                 contentDescription = "sunny",
                 alignment = Alignment.Center
             )
             Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "$temperatureNowText°C",
-                fontSize = 20.sp
-            )
-            Spacer(modifier = Modifier.width(10.dp))
             Column {
                 Text(
-                    text = weatherNowText,
-                    fontSize = 10.sp
+                    text = "$temperatureNowText°C",
+                    fontSize = 26.sp
                 )
                 Text(
                     text = "최고:${maxTemperature}°C 최저: ${minTemperature}°C",
-                    fontSize = 10.sp
+                    fontSize = 7.sp,
+                    color = Color.Gray
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column (modifier = Modifier
+                .align(Alignment.CenterVertically)
+            ){
+                Text(
+                    text = "강수확률: ${precipitationProbability}%",
+                    fontSize = 7.sp,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "습도: ${humidity}%",
+                    fontSize = 7.sp,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "풍속: ${windSpeed}m/s",
+                    fontSize = 7.sp,
+                    color = Color.Gray
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -207,6 +229,30 @@ fun TodayWeatherInformation(modifier: Modifier = Modifier, viewModel: WeatherVie
                 color = Color.Blue,
                 style = Stroke(width = 2.dp.toPx())
             )
+
+            val textPaint = android.graphics.Paint().apply {
+                color = android.graphics.Color.GRAY
+                textSize = 7.sp.toPx()
+                textAlign = android.graphics.Paint.Align.CENTER
+            }
+
+            weatherFormattedDataPerHourMap?.keys?.forEachIndexed { index, hour ->
+                if(index % 3 == 0) {
+                    val x = padding + index * stepX
+                    drawContext.canvas.nativeCanvas.drawText(
+                        hour.substring(0, 2) + ":" + hour.substring(2, 4),
+                        x,
+                        height - padding / 2,
+                        textPaint
+                    )
+                    drawContext.canvas.nativeCanvas.drawText(
+                        data[index].toString(),
+                        x,
+                        data[index] + (maxYValue - data[index]) * stepY,
+                        textPaint
+                    )
+                }
+            }
         }
     }
 }
