@@ -9,6 +9,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.lifecycle.ViewModelProvider
@@ -20,6 +21,7 @@ import com.example.mnemonic.weather.viewmodel.WeatherViewModelFactory
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.mnemonic.chatgpt.api.ChatGPTRetrofitInstance
 import com.example.mnemonic.chatgpt.repository.ChatGPTRepository
@@ -51,8 +53,10 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             MnemonicTheme {
-                Column {
-                    TodayWeatherInfomation(modifier = Modifier, weatherViewModel)
+                Column (
+                    Modifier.fillMaxWidth()
+                ) {
+                    TodayWeatherInformation(modifier = Modifier, weatherViewModel)
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -124,7 +128,7 @@ class MainActivity : ComponentActivity() {
             question += "바람 세기는 ${weatherInfo.windSpeed}m/s야. "
 
         }
-        question += "이 정보를 바탕으로 의미가 있는 분석을 해서 오늘 하루를 시작하는 나에게 100자 이하의 조언을 정중하게 해줘."
+        question += "이 정보를 바탕으로 의미가 있는 분석을 해서 오늘 하루를 시작하는 나에게 100자 이하의 조언을 존댓말로 해줘."
         Log.d(TAG, "convertToChatGPTQuestions: $question")
         return question
     }

@@ -1,5 +1,6 @@
 package com.example.mnemonic
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,12 +23,15 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.drawscope.Stroke
 import com.example.mnemonic.chatgpt.viewmodel.ChatGPTViewModel
 import com.example.mnemonic.ui.theme.MnemonicTheme
 import com.example.mnemonic.weather.api.RetrofitInstance
@@ -45,16 +50,18 @@ fun TodayWeatherInfomationPreview() {
     MnemonicTheme {
         val repository = WeatherRepository(RetrofitInstance.api)
         val viewModel = WeatherViewModel(repository)
-        TodayWeatherInfomation(viewModel = viewModel)
+        TodayWeatherInformation(viewModel = viewModel)
     }
 }
 
 @Composable
-fun TodayWeatherInfomation(modifier: Modifier = Modifier, viewModel: WeatherViewModel){
+fun TodayWeatherInformation(modifier: Modifier = Modifier, viewModel: WeatherViewModel) {
     val weatherFormattedDataPerDayList by viewModel.weatherFormattedDataPerDayList.observeAsState()
     val weatherFormattedDataPerDayToday = weatherFormattedDataPerDayList?.getOrNull(0)
+    val weatherFormattedDataPerHourMap = weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap
     val dateFormatter = DateTimeFormatter.ofPattern("HH00", Locale.US)
-    val nowHour: String = LocalDateTime.now().format(dateFormatter).toString()
+    var nowHour: String = LocalDateTime.now().format(dateFormatter).toString()
+    if(nowHour == "0000" || nowHour == "0100" || nowHour == "0200") nowHour = "0300"
 
     /* 주소 정보 */
     val locationName by viewModel.locationName.observeAsState("unknown")
@@ -66,9 +73,9 @@ fun TodayWeatherInfomation(modifier: Modifier = Modifier, viewModel: WeatherView
 
     /* 날씨 정보 */
     val precipitationType =
-        weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.getOrDefault(nowHour, null)?.precipitationType
+        weatherFormattedDataPerHourMap?.getOrDefault(nowHour, null)?.precipitationType
     val weatherType =
-        weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.getOrDefault(nowHour, null)?.weatherType
+        weatherFormattedDataPerHourMap?.getOrDefault(nowHour, null)?.weatherType
     var weatherNowText = ""
     var weatherIconId = R.drawable.icon_weather_sunny
     when (precipitationType) {
@@ -109,44 +116,98 @@ fun TodayWeatherInfomation(modifier: Modifier = Modifier, viewModel: WeatherView
     }
 
     /* 현재 기온 */
-    val temperatureNowText = weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.getValue(nowHour.toString())?.temperature.toString()
-
+    val temperature = weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.get(nowHour)?.temperature
+    val temperatureNowText = temperature?.toString() ?: "N/A"
+    weatherFormattedDataPerDayToday?.weatherFormattedDataPerHourMap?.keys?.forEach { key ->
+        println("Key: $key")
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 10.dp, vertical = 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .height(200.dp)
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        horizontalAlignment = Alignment.Start
     ) {
-        Text(
-            text = locationName,
-            fontSize = 17.sp,
-            color = Color.Black
-        )
-        Text(
-            text = locationNameDetail,
-            fontSize = 13.sp,
-            color = Color.Gray
-        )
-        Image(
+        Row(
             modifier = Modifier
-                .width(120.dp)
-                .height(170.dp)
-                .padding(vertical = 30.dp),
-            painter = painterResource(id = weatherIconId),
-            contentDescription = "sunny"
-        )
-        Text(
-            text = "$temperatureNowText°C",
-            fontSize = 30.sp
-        )
-        Text(
-            text = weatherNowText,
-            fontSize = 10.sp
-        )
-        Text(
-            text = "최고:${maxTemperature}°C 최저: ${minTemperature}°C",
-            fontSize = 10.sp
-        )
+                .fillMaxWidth()
+        ) {
+            Image(
+                modifier = Modifier
+                    .width(24.dp)
+                    .height(25.dp),
+                painter = painterResource(id = weatherIconId),
+                contentDescription = "sunny",
+                alignment = Alignment.Center
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = "$temperatureNowText°C",
+                fontSize = 20.sp
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+                Text(
+                    text = weatherNowText,
+                    fontSize = 10.sp
+                )
+                Text(
+                    text = "최고:${maxTemperature}°C 최저: ${minTemperature}°C",
+                    fontSize = 10.sp
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Column(
+                modifier = Modifier.padding(top = 10.dp, end = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ){
+                Text(
+                    text = locationName,
+                    fontSize = 8.sp,
+                    color = Color.Black
+                )
+                Text(
+                    text = locationNameDetail,
+                    fontSize = 6.sp,
+                    color = Color.Gray
+                )
+            }
+        }
+        Canvas(modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f)) {
+            val maxYValue = maxTemperature.toInt()
+            val minYValue = minTemperature.toInt()
+            val data = weatherFormattedDataPerHourMap?.values?.map {
+                it.temperature ?: ((maxYValue + minYValue) / 2)
+            } ?: emptyList()
+            val width = size.width
+            val height = size.height
+            val padding = 16.dp.toPx()
+            val chartWidth = width - (2 * padding)
+            val chartHeight = height - (2 * padding)
+
+            val stepX = chartWidth / (weatherFormattedDataPerHourMap?.size ?: 1)
+            val stepY = if (maxYValue == minYValue) 0f else chartHeight / (maxYValue - minYValue)
+
+            val path = Path().apply {
+                data.forEachIndexed { index, value ->
+                    val x = padding + index * stepX
+                    val y = padding + (maxYValue - value) * stepY
+                    if (index == 0) {
+                        moveTo(x, y)
+                    } else {
+                        lineTo(x, y)
+                    }
+                }
+            }
+
+            drawPath(
+                path = path,
+                color = Color.Blue,
+                style = Stroke(width = 2.dp.toPx())
+            )
+        }
     }
 }
 @Preview(showBackground = true)
@@ -238,7 +299,8 @@ fun ForecastWeatherInformation(modifier: Modifier = Modifier, viewModel: Weather
     }
 
     Row(
-        modifier = Modifier.padding(10.dp),
+        modifier = modifier
+            .padding(10.dp)
     ) {
         Column (
             modifier = Modifier.fillMaxHeight(),
@@ -265,7 +327,8 @@ fun ForecastWeatherInformation(modifier: Modifier = Modifier, viewModel: Weather
         Spacer(modifier = Modifier.width(10.dp))
         Column (
             modifier = Modifier.fillMaxHeight(),
-            verticalArrangement = Arrangement.Center){
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
                 modifier = Modifier
                     .padding(end = 10.dp),
@@ -286,6 +349,7 @@ fun CautionMessagePreview() {
 @Composable
 fun CautionMessage(modifier: Modifier = Modifier, viewModel: ChatGPTViewModel) {
     val cautionMessageText = viewModel.adviceMessage.observeAsState().value ?: "invalid"
+
     Box(modifier = Modifier
         .fillMaxWidth()
         .padding(horizontal = 30.dp)
