@@ -1,5 +1,6 @@
-package com.example.mnemonic
+package com.example.mnemonic.screens
 
+import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,15 +24,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mnemonic.R
 import com.example.mnemonic.chatgpt.viewmodel.ChatGPTViewModel
 import com.example.mnemonic.ui.theme.MnemonicTheme
 import com.example.mnemonic.weather.api.RetrofitInstance
@@ -44,6 +45,36 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+@Composable
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    weatherViewModel: WeatherViewModel = viewModel(),
+    chatGPTViewModel: ChatGPTViewModel = viewModel()
+) {
+    Column (
+        Modifier.fillMaxWidth()
+    ) {
+        TodayWeatherInformation(modifier = Modifier, weatherViewModel)
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .height(60.dp)
+        ) {
+            ForecastWeatherInformation(
+                viewModel = weatherViewModel,
+                dayLater = 1,
+                modifier = Modifier.weight(1f)
+            )
+            ForecastWeatherInformation(
+                viewModel = weatherViewModel,
+                dayLater = 2,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        CautionMessage(viewModel = chatGPTViewModel)
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
@@ -230,10 +261,10 @@ fun TodayWeatherInformation(modifier: Modifier = Modifier, viewModel: WeatherVie
                 style = Stroke(width = 2.dp.toPx())
             )
 
-            val textPaint = android.graphics.Paint().apply {
+            val textPaint = Paint().apply {
                 color = android.graphics.Color.GRAY
                 textSize = 7.sp.toPx()
-                textAlign = android.graphics.Paint.Align.CENTER
+                textAlign = Paint.Align.CENTER
             }
 
             weatherFormattedDataPerHourMap?.keys?.forEachIndexed { index, hour ->

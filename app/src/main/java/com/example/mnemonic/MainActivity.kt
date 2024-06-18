@@ -56,15 +56,7 @@ class MainActivity : ComponentActivity() {
                 Column (
                     Modifier.fillMaxWidth()
                 ) {
-                    TodayWeatherInformation(modifier = Modifier, weatherViewModel)
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(60.dp)) {
-                        ForecastWeatherInformation(viewModel = weatherViewModel, dayLater = 1, modifier = Modifier.weight(1f))
-                        ForecastWeatherInformation(viewModel = weatherViewModel, dayLater = 2, modifier = Modifier.weight(1f))
-                    }
-                    CautionMessage(viewModel = chatGPTViewModel)
+                    MainApp()
                 }
             }
         }
