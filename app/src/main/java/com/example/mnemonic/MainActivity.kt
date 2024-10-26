@@ -12,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.lifecycle.ViewModelProvider
 import com.example.mnemonic.util.GpsUtil.getCurrentUserGpsData
 import com.example.mnemonic.weather.api.RetrofitInstance
@@ -54,9 +55,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             MnemonicTheme {
                 Column (
-                    Modifier.fillMaxWidth()
+                    Modifier.fillMaxSize()
+
                 ) {
-                    MainApp()
+                    MainApp(modifier = Modifier)
                 }
             }
         }
@@ -76,9 +78,8 @@ class MainActivity : ComponentActivity() {
             if (location == null) {
                 Toast.makeText(this, "GPS 데이터를 불러오는데 실패했습니다", Toast.LENGTH_SHORT).show()
             } else{
-                val weatherRequest = convertToApiParams(location, baseDate, getCurrentTimeFormatted("HH00"))
                 /* 날씨 API 호출 */
-                weatherViewModel.getWeatherCurrentThreeDay(weatherRequest)
+                weatherViewModel.getWeatherCurrentThreeDay(location, baseDate, getCurrentTimeFormatted("HH00"));
 
                 /* 지역 이름 정보 요청 */
                 weatherViewModel.getLocationName(this, location.latitude, location.longitude)
@@ -94,71 +95,6 @@ class MainActivity : ComponentActivity() {
     }
     private fun requestAdviseFromChatGPT(){
         /* ChatGPT 호출 */
-        val chatGPTQuestions =
-            convertToChatGPTQuestions(weatherViewModel.weatherFormattedDataPerDayList.value?.get(0)?: return)
-        chatGPTViewModel.getChatGPTResponse(chatGPTQuestions)
-    }
-    private fun convertToChatGPTQuestions(weatherFormattedDataPerDay: WeatherFormattedDataPerDay): String{
-        var question = ""
-        for(weatherFormattedData in weatherFormattedDataPerDay.weatherFormattedDataPerHourMap){
-            val weatherInfo = weatherFormattedData.value
-            question += "${weatherFormattedData.key}시 에는"
-            question += "강수확률 ${weatherInfo.precipitationProbability}%이고, "
-            when(weatherInfo.precipitationType) {
-                PrecipitationType.Rain -> question += "비가 예보 돼있고 강수량은 ${weatherInfo.precipitationAmount}로 예상돼."
-                PrecipitationType.Snow -> question += "눈이 예보 돼있고 적설량은 ${weatherInfo.snowfallAmount}로 예상돼."
-                PrecipitationType.SnowRain -> question += "눈과 비가 예보 돼있어."
-                PrecipitationType.Shower -> question += "소나기 예보 돼있고 강수량은 ${weatherInfo.precipitationAmount}로 예상돼."
-                else -> when(weatherInfo.weatherType){
-                    WeatherType.Sunny -> question += "맑은 날씨야."
-                    WeatherType.cloudy-> question += "구름이 조금 많아."
-                    WeatherType.cloudyWeather -> question += "흐린 날씨야."
-                    else -> question += "날씨가 예보 돼있지 않아."
-                }
-            }
-            question += "습도는 ${weatherInfo.humidity}%이고, 기온은 ${weatherInfo.temperature}도야. "
-            question += "바람 세기는 ${weatherInfo.windSpeed}m/s야. "
-
-        }
-        question += "이 정보를 바탕으로 의미가 있는 분석을 해서 오늘 하루를 시작하는 나에게 100자 이하의 조언을 존댓말로 해줘."
-        Log.d(TAG, "convertToChatGPTQuestions: $question")
-        return question
-    }
-    private fun convertToApiParams(location: Location, date: String, time: String ): WeatherApiRequest {
-        var convertedDate = date
-        when (time) {
-            "0000", "0100" -> {
-                val formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
-                val originalDate = LocalDate.parse(date, formatter)
-                convertedDate = originalDate.minusDays(1).format(formatter)
-            }
-        }
-        val converter = WeatherCoordinateConverter()
-        val convertedLocation = converter.convertToXy(location.latitude, location.longitude)
-        return WeatherApiRequest(baseDate = convertedDate, nx = convertedLocation.nx.toString(), ny = convertedLocation.ny.toString())
+        chatGPTViewModel.getChatGPTResponse(weatherViewModel.weatherFormattedDataPerDayList.value?.get(0)?: return)
     }
 }
-
-/*
-fun convertToApiParams(location: Location, date: String, time: String ): WeatherRequestForThreeDay{
-    var convertedTime = "0500"
-    var convertedDate = date
-    when (time) {
-        "0200", "0300", "0400" -> convertedTime = "0200"
-        "0500", "0600", "0700" -> convertedTime = "0500"
-        "0800", "0900", "1000" -> convertedTime = "0800"
-        "1100", "1200", "1300" -> convertedTime = "1100"
-        "1400", "1500", "1600" -> convertedTime = "1400"
-        "1700", "1800", "1900" -> convertedTime = "1700"
-        "2000", "2100", "2200" -> convertedTime = "2000"
-        "2300" -> convertedTime = "2300"
-        "0000", "0100" -> {
-            convertedTime = "2300"
-            val formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
-            val originalDate = LocalDate.parse(date, formatter)
-            convertedDate = originalDate.minusDays(1).format(formatter)
-        }
-    }
-    return WeatherRequestForThreeDay(baseDate = convertedDate, nx = location.latitude.toInt().toString(), ny = location.longitude.toInt().toString())
-}
-*/

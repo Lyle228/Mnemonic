@@ -1,21 +1,13 @@
-package com.example.mnemonic.chatgpt.repository
+package com.example.mnemonic.util
 
 import android.content.ContentValues
 import android.util.Log
-import com.example.mnemonic.chatgpt.api.ChatGPTApiService
-import com.example.mnemonic.chatgpt.model.ChatGPTRequest
-import com.example.mnemonic.chatgpt.model.ChatGPTResponse
 import com.example.mnemonic.weather.model.PrecipitationType
 import com.example.mnemonic.weather.model.WeatherFormattedDataPerDay
 import com.example.mnemonic.weather.model.WeatherType
-import retrofit2.Response
 
-class ChatGPTRepository(private val chatGPTApiService: ChatGPTApiService) {
-    suspend fun sendChatGPTRequest(request: ChatGPTRequest) : Response<ChatGPTResponse> {
-        return chatGPTApiService.sendChatGPTRequest(request)
-    }
-
-    fun convertToChatGPTQuestions(weatherFormattedDataPerDay: WeatherFormattedDataPerDay): String{
+class GptUtil {
+    private fun convertToChatGPTQuestions(weatherFormattedDataPerDay: WeatherFormattedDataPerDay): String{
         var question = ""
         for(weatherFormattedData in weatherFormattedDataPerDay.weatherFormattedDataPerHourMap){
             val weatherInfo = weatherFormattedData.value
@@ -41,4 +33,6 @@ class ChatGPTRepository(private val chatGPTApiService: ChatGPTApiService) {
         Log.d(ContentValues.TAG, "convertToChatGPTQuestions: $question")
         return question
     }
+
+
 }

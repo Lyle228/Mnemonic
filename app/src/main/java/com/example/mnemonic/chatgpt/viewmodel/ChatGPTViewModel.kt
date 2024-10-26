@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.mnemonic.chatgpt.model.ChatGPTRequest
 import com.example.mnemonic.chatgpt.model.Message
 import com.example.mnemonic.chatgpt.repository.ChatGPTRepository
+import com.example.mnemonic.weather.model.WeatherFormattedDataPerDay
 import kotlinx.coroutines.launch
 
 class ChatGPTViewModel(private val repository: ChatGPTRepository) : ViewModel() {
@@ -15,6 +16,10 @@ class ChatGPTViewModel(private val repository: ChatGPTRepository) : ViewModel() 
     private val _adviceMessage : MutableLiveData<String> = MutableLiveData()
     val adviceMessage : LiveData<String>
         get() = _adviceMessage
+
+    fun getChatGPTResponse(weatherFormattedDataPerDay: WeatherFormattedDataPerDay) {
+        getChatGPTResponse(repository.convertToChatGPTQuestions(weatherFormattedDataPerDay));
+    }
     fun getChatGPTResponse(prompt: String) {
         val request = ChatGPTRequest(
             model = "gpt-3.5-turbo",

@@ -3,6 +3,7 @@ package com.example.mnemonic.weather.viewmodel
 import android.content.Context
 import android.location.Address
 import android.location.Geocoder
+import android.location.Location
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -57,6 +58,9 @@ class WeatherViewModel (private val repository: WeatherRepository) : ViewModel()
             }
             _weatherFormattedDataPerDayList.value = formattedData
         }
+    }
+    fun getWeatherCurrentThreeDay(location: Location, date: String, time: String) {
+        getWeatherCurrentThreeDay(repository.convertToApiParams(location, date, time));
     }
     fun getWeatherCurrentThreeDay(weatherRequest: WeatherApiRequest){
         viewModelScope.launch {

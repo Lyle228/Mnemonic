@@ -2,9 +2,9 @@
 <project version="4">
   <component name="deploymentTargetSelector">
     <selectionStates>
-      <SelectionState runConfigName="app">
+      <SelectionState runConfigName="Mnemonic">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-06-16T06:11:58.820011800Z">
+        <DropdownSelection timestamp="2024-06-24T11:45:40.325824600Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\rlaal\.android\avd\Pixel_8_Pro_API_TiramisuPrivacySandbox.avd" />

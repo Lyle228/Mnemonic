@@ -1,9 +1,12 @@
 package com.example.mnemonic
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -73,7 +76,7 @@ fun MainApp (
 ) {
     val navController = rememberNavController()
     Scaffold (
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier,
         bottomBar = {
             BottomNavigation(
                 modifier = Modifier,
@@ -81,13 +84,23 @@ fun MainApp (
             )
         }
     ) {
-        Box(modifier = modifier.padding(it)) {
-            MyNavHost(
-                modifier = Modifier,
-                navController = navController,
-                weatherViewModel = weatherViewModel,
-                chatGPTViewModel = chatGPTViewModel
-            )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(235, 239, 240, 255))
+        ) {
+            Spacer(modifier = Modifier.height(20.dp))
+            Box(
+                modifier = modifier
+                    .padding(it)
+            ) {
+                MyNavHost(
+                    modifier = Modifier,
+                    navController = navController,
+                    weatherViewModel = weatherViewModel,
+                    chatGPTViewModel = chatGPTViewModel
+                )
+            }
         }
     }
 }

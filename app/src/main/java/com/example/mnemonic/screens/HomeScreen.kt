@@ -4,6 +4,7 @@ import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,27 +53,53 @@ fun HomeScreen(
     weatherViewModel: WeatherViewModel = viewModel(),
     chatGPTViewModel: ChatGPTViewModel = viewModel()
 ) {
-    Column (
-        Modifier.fillMaxWidth()
-    ) {
-        TodayWeatherInformation(modifier = Modifier, weatherViewModel)
-        Row(
-            Modifier
+    val roundEdge = 25.dp
+    Column()
+    {
+        Box(
+            modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)
-        ) {
-            ForecastWeatherInformation(
-                viewModel = weatherViewModel,
-                dayLater = 1,
-                modifier = Modifier.weight(1f)
-            )
-            ForecastWeatherInformation(
-                viewModel = weatherViewModel,
-                dayLater = 2,
-                modifier = Modifier.weight(1f)
-            )
+                .padding(horizontal = 15.dp)
+                .background(Color.White, shape = RoundedCornerShape(roundEdge))
+                .border(1.dp, Color.White, RoundedCornerShape(roundEdge))
+        )
+        {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+            ) {
+                TodayWeatherInformation(modifier = Modifier, weatherViewModel)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                ) {
+                    ForecastWeatherInformation(
+                        viewModel = weatherViewModel,
+                        dayLater = 1,
+                        modifier = Modifier.weight(1f)
+                    )
+                    ForecastWeatherInformation(
+                        viewModel = weatherViewModel,
+                        dayLater = 2,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                CautionMessage(viewModel = chatGPTViewModel)
+                Spacer(modifier = Modifier.height(10.dp))
+            }
         }
-        CautionMessage(viewModel = chatGPTViewModel)
+        Spacer(modifier = Modifier.height(20.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 15.dp)
+                .background(Color.White, shape = RoundedCornerShape(roundEdge))
+                .border(1.dp, Color.White, RoundedCornerShape(roundEdge))
+        )
+        {
+            TodaySchedule(Modifier)
+        }
     }
 }
 
@@ -410,7 +437,7 @@ fun ForecastWeatherInformation(modifier: Modifier = Modifier, viewModel: Weather
                 modifier = Modifier
                     .padding(end = 10.dp),
                 text = "${maxTemperature}°C / ${minTemperature}°C",
-                fontSize = 14.sp,
+                fontSize = 12.sp,
             )
         }
     }
@@ -420,7 +447,7 @@ fun ForecastWeatherInformation(modifier: Modifier = Modifier, viewModel: Weather
 fun CautionMessagePreview() {
     MnemonicTheme {
         val context = LocalContext.current
-        //autionMessage(messageID = R.string.heatwave_msg, context = context, params = listOf("20") )
+        //CautionMessage(messageID = R.string.heatwave_msg, context = context, params = listOf("20") )
     }
 }
 @Composable
@@ -429,15 +456,16 @@ fun CautionMessage(modifier: Modifier = Modifier, viewModel: ChatGPTViewModel) {
 
     Box(modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 30.dp)
+        .padding(horizontal = 15.dp)
+        .background(
+            color = MaterialTheme.colorScheme.primaryContainer,
+            shape = RoundedCornerShape(10.dp)
+        )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(10.dp)
-                )
+                .padding(7.dp)
         ) {
             Spacer(modifier = Modifier.height(5.dp))
             Text(
@@ -449,5 +477,15 @@ fun CautionMessage(modifier: Modifier = Modifier, viewModel: ChatGPTViewModel) {
             )
             Spacer(modifier = Modifier.height(5.dp))
         }
+    }
+}
+@Composable
+fun TodaySchedule(modifier: Modifier = Modifier) {
+    Column (
+        modifier = Modifier
+            .padding(10.dp)
+    ) {
+        Text(text = "6월 22일 토요일", fontSize = 10.sp, color = Color.Gray)
+        Text(text = "김민식님의 일정이에요.", fontSize = 12.sp, color = Color.Black)
     }
 }
